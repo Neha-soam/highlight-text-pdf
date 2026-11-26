@@ -1,20 +1,22 @@
-﻿Highlight Extractor PWA
+Highlight Extractor PWA
 
-A Progressive Web App (PWA) that allows users to extract highlighted text and generate PDF documents. It supports offline access after the first successful online visit.
+A lightweight Progressive Web App to extract highlighted text and generate PDF files.
 
 Features
 
-- Extract highlighted text.
-- Generate PDF documents.
-- Installable on Android and iOS devices.
-- Offline support using Service Workers.
-- Caches application resources for faster loading.
-- Lightweight and easy to use.
+- Extract highlighted text
+- Generate PDF documents
+- Installable on mobile devices
+- Offline support using Service Workers
+- Cached resources for offline access
+
+Tech Stack
+
+HTML • CSS • JavaScript • PWA • Service Workers
 
 Project Structure
 
-highlight-extractor-pwa/
-│
+highlight-text-pdf/
 ├── index.html
 ├── manifest.webmanifest
 ├── sw.js
@@ -22,91 +24,16 @@ highlight-extractor-pwa/
 ├── icon-512.png
 └── apple-touch-icon.png
 
-Technologies Used
+Deployment
 
-- HTML
-- CSS
-- JavaScript
-- Progressive Web App (PWA)
-- Service Workers
-- Web App Manifest
-- Browser Cache API
+Hosted using Netlify.
 
-How Offline Support Works
+1. Extract the ZIP file.
+2. Upload the project folder to "Netlify Drop" (https://app.netlify.com/drop).
+3. Open the generated HTTPS URL.
 
-The application uses a Service Worker ("sw.js") to cache important application files.
+Offline Support
 
-First Visit (Online)
+The Service Worker caches essential resources during the first online visit, allowing the app to work offline afterward.
 
-1. The browser downloads the application files.
-2. The Service Worker gets registered.
-3. Required resources are stored in the browser cache.
-
-Subsequent Visits (Offline)
-
-1. The browser requests application resources.
-2. The Service Worker intercepts these requests.
-3. It checks whether the requested resources exist in the cache.
-4. Cached resources are returned without requiring an internet connection.
-
-Note: Offline functionality depends on all required resources and libraries being cached successfully.
-
-Installation and Deployment
-
-1. Clone the Repository
-
-git clone https://github.com/YOUR_USERNAME/highlight-extractor-pwa.git
-
-2. Open the Project
-
-cd highlight-extractor-pwa
-
-Open the folder in VS Code.
-
-3. Deploy Using GitHub Pages
-
-1. Open your GitHub repository.
-2. Navigate to Settings → Pages.
-3. Select Deploy from a branch.
-4. Choose the "main" branch.
-5. Select "/ (root)".
-6. Click Save.
-
-Your application will be available at:
-
-https://YOUR_USERNAME.github.io/highlight-extractor-pwa/
-
-Installing the PWA
-
-Android
-
-1. Open the deployed application in Chrome.
-2. Tap the three-dot menu.
-3. Select Install app.
-4. The application will appear on your home screen.
-
-iOS
-
-1. Open the application in Safari.
-2. Tap Share.
-3. Select Add to Home Screen.
-
-Important Notes
-
-- HTTPS is required for Service Worker functionality.
-- Open the application online at least once before testing offline functionality.
-- Keep the cache version updated when changing cached resources.
-- If a PDF-generation library is loaded externally, make sure it is available offline too.
-- Opening "index.html" directly using a file manager does not provide normal PWA installation or Service Worker support.
-
-Future Improvements
-
-- Improve offline PDF generation.
-- Add support for multiple highlighted text sections.
-- Improve PDF formatting and customization.
-- Add better error handling.
-- Improve the user interface.
-
-License
-
-Add your preferred open-source license before publishing the project.
+Note: Offline functionality depends on required resources being cached successfully.
