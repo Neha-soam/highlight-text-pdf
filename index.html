@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Highlight Extractor</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#b4540a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Highlights">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#fbfaf7;--card:#fff;--ink:#1d1d1b;--mute:#6b6a66;--line:#e3e0d8;--acc:#b4540a;--accfg:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--card:#222220;--ink:#efede7;--mute:#a09e97;--line:#38372f;--acc:#f0a35e;--accfg:#1a1a18;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171716;--card:#222220;--ink:#efede7;--mute:#a09e97;--line:#38372f;--acc:#f0a35e;--accfg:#1a1a18;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*:before,*:after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1{font:600 24px/1.2 Georgia,serif;margin:0 0 4px}
+.sub{color:var(--mute);margin:0 0 18px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.drop{border:2px dashed var(--line);text-align:center;padding:28px 14px;cursor:pointer}
+.drop.over{border-color:var(--acc)}
+.drop b{display:block;margin-bottom:4px}
+.steps{color:var(--mute);font-size:13px;margin:10px 0 0;padding-left:18px}
+button{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;cursor:pointer}
+button.pri{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.5}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:13px;color:var(--mute)}
+input[type=text],input[type=number],select,textarea{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.chk{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px;margin-top:8px}
+.hl{border-left:5px solid #ffe066;padding:6px 0 6px 10px;margin:12px 0}
+.hl .m{font-size:12px;color:var(--mute);display:flex;gap:8px;justify-content:space-between}
+.hl p{margin:4px 0}
+.hl textarea{margin-top:4px;font-size:14px;min-height:38px}
+.pre{font-size:14px}
+.sec{font:600 15px Georgia,serif;margin:18px 0 0;border-bottom:1px solid var(--line);padding-bottom:3px}
+#status{color:var(--mute);font-size:14px;margin:8px 0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>Highlight Extractor</h1>
+<p class="sub">Pull the highlighted passages out of a PDF and turn them into a clean summary PDF. Everything runs in your browser; your file is never uploaded.</p>
+
+<div class="card drop" id="drop">
+  <b>Tap to choose a PDF</b>
+  <span style="color:var(--mute);font-size:14px">or drop one here</span>
+  <input type="file" id="file" accept="application/pdf,.pdf" class="hide">
+  <ol class="steps" style="text-align:left"><li>Choose a PDF with highlights or underlines.</li><li>Review, edit notes and untick anything you don’t want.</li><li>Adjust layout, then download.</li></ol>
+</div>
+<div id="status"></div>
+
+<div id="work" class="hide">
+  <div class="card">
+    <div class="grid">
+      <label>Font<select id="font"><option value="helvetica">Sans (Helvetica)</option><option value="times">Serif (Times)</option><option value="courier">Mono (Courier)</option></select></label>
+      <label>Text size (pt)<input type="number" id="size" value="11" min="8" max="20"></label>
+      <label>Margins (pt)<input type="number" id="margin" value="56" min="24" max="120"></label>
+      <label>Page<select id="page"><option value="a4">A4</option><option value="letter">Letter</option></select></label>
+    </div>
+    <label style="margin-top:10px">Title<input type="text" id="title" placeholder="Highlights"></label>
+    <div class="chk"><input type="checkbox" id="tp" checked> <span>Title page</span></div>
+    <div class="chk"><input type="checkbox" id="grp" checked> <span>Group by section</span></div>
+    <div class="chk"><input type="checkbox" id="pn" checked> <span>Show page numbers</span></div>
+    <div class="chk"><input type="checkbox" id="orig"> <span>Keep original text size</span></div>
+  </div>
+  <div class="bar" style="margin-bottom:6px">
+    <button class="pri" id="dl">Download PDF</button>
+    <button id="all">Toggle all</button>
+    <span id="count" style="color:var(--mute);font-size:14px"></span>
+  </div>
+  <div class="card pre" id="list"></div>
+</div>
+<p class="sub">Works with highlight and underline annotations in digital PDFs. Scanned (OCR) and Word/Google Docs input aren’t supported here; export those to PDF first.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const $=id=>document.getElementById(id);
+let H=[],fname='document';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const status=t=>$('status').textContent=t;
+
+$('drop').onclick=()=>$('file').click();
+$('file').onchange=e=>e.target.files[0]&&run(e.target.files[0]);
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('over')};
+$('drop').ondragleave=()=>$('drop').classList.remove('over');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('over');e.dataTransfer.files[0]&&run(e.dataTransfer.files[0])};
+
+function quads(a){
+  const q=a.quadPoints,out=[];let pts=[];
+  if(q&&q.length){
+    if(typeof q[0]==='number'){for(let i=0;i+1<q.length;i+=2)pts.push({x:q[i],y:q[i+1]})}
+    else if(Array.isArray(q[0])){q.forEach(g=>g.forEach(p=>pts.push(p)))}
+    else pts=Array.from(q);
+    for(let i=0;i+3<pts.length;i+=4){
+      const g=pts.slice(i,i+4),xs=g.map(p=>p.x),ys=g.map(p=>p.y);
+      out.push([Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]);
+    }
+  }
+  if(!out.length&&a.rect)out.push(Array.from(a.rect));
+  return out;
+}
+async function outlineOf(pdf){
+  const out=[];
+  async function walk(list){
+    for(const n of list){
+      try{
+        let d=n.dest;if(typeof d==='string')d=await pdf.getDestination(d);
+        if(d&&d[0]!=null){const i=typeof d[0]==='object'?await pdf.getPageIndex(d[0]):d[0];out.push({title:n.title,page:i+1})}
+      }catch(e){}
+      if(n.items&&n.items.length)await walk(n.items);
+    }
+  }
+  try{const o=await pdf.getOutline();if(o)await walk(o)}catch(e){}
+  return out.sort((a,b)=>a.page-b.page);
+}
+async function scan(page,items,p,sec){
+  const s=1.5,vp=page.getViewport({scale:s}),cv=document.createElement('canvas');
+  cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);
+  const cx=cv.getContext('2d',{willReadFrequently:true});
+  cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);
+  await page.render({canvasContext:cx,viewport:vp,annotationMode:0}).promise;
+  const flags=items.map(it=>{
+    if(!it.str.trim()||!(it.width>0))return null;
+    const t=pdfjsLib.Util.transform(vp.transform,it.transform),h=(it.height||Math.abs(it.transform[3])||10)*s;
+    const x=Math.max(0,Math.floor(t[4])),y=Math.max(0,Math.floor(t[5]-h*0.8)),w=Math.min(cv.width-x,Math.ceil(it.width*s)),hh=Math.min(cv.height-y,Math.ceil(h));
+    if(w<2||hh<2)return null;
+    const d=cx.getImageData(x,y,w,hh).data;let tot=0,hl=0,r=0,g=0,b=0;
+    for(let i=0;i<d.length;i+=4){
+      const mx=Math.max(d[i],d[i+1],d[i+2]),mn=Math.min(d[i],d[i+1],d[i+2]);
+      if(mx<110)continue;tot++;
+      if(mx>=170&&mx-mn>=45){hl++;r+=d[i];g+=d[i+1];b+=d[i+2]}
+    }
+    if(tot<8||hl/tot<0.5)return null;
+    return [Math.round(r/hl),Math.round(g/hl),Math.round(b/hl)];
+  });
+  const n=flags.filter(Boolean).length;
+  if(!n||n>items.length*0.6)return;
+  let cur=null;
+  const flush=()=>{
+    if(!cur)return;
+    const text=cur.t.replace(/\s+/g,' ').trim();
+    if(text)H.push({page:p,top:cur.y,section:sec?sec.title:'',text,size:cur.h||11,color:`rgb(${cur.c.join(',')})`,kind:'Highlight',note:'',on:true});
+    cur=null;
+  };
+  items.forEach((it,i)=>{
+    const f=flags[i];
+    if(!f){if(it.str.trim())flush();else if(cur)cur.t+=' ';return}
+    if(cur&&Math.abs(cur.c[0]-f[0])+Math.abs(cur.c[1]-f[1])+Math.abs(cur.c[2]-f[2])>90)flush();
+    if(!cur)cur={t:'',c:f,y:it.transform[5],h:Math.round(it.height)};
+    cur.t+=it.str+(it.hasEOL?' ':'');
+  });
+  flush();
+}
+async function run(file){
+  try{
+    fname=file.name.replace(/\.pdf$/i,'');H=[];
+    $('work').classList.add('hide');status('Reading '+file.name+'…');
+    const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+    const ol=await outlineOf(pdf),stats={};
+    for(let p=1;p<=pdf.numPages;p++){
+      status('Scanning page '+p+' of '+pdf.numPages+'…');
+      const page=await pdf.getPage(p);
+      const all=await page.getAnnotations();all.forEach(a=>stats[a.subtype]=(stats[a.subtype]||0)+1);
+      const anns=all.filter(a=>a.subtype==='Highlight'||a.subtype==='Underline');
+      const items=(await page.getTextContent()).items.filter(i=>i.str!==undefined&&i.transform);
+      const sec=[...ol].reverse().find(o=>o.page<=p),before=H.length;
+      for(const a of anns){
+        const qs=quads(a);let text='',sizes=[];
+        for(const it of items){
+          const x=it.transform[4],y=it.transform[5],w=it.width||0,h=it.height||Math.abs(it.transform[3])||10,cy=y+h*0.35;
+          let piece='';
+          for(const [x0,y0,x1,y1] of qs){
+            if(cy<y0-1||cy>y1+1||w<=0)continue;
+            const l=Math.max(x,x0),r=Math.min(x+w,x1);
+            if(r-l<=0.5)continue;
+            const n=it.str.length,s=Math.round((l-x)/w*n),e=Math.round((r-x)/w*n);
+            piece+=it.str.slice(s,e);
+          }
+          if(piece){text+=piece+(it.hasEOL?' ':'');sizes.push(h)}
+        }
+        text=text.replace(/\s+/g,' ').trim();
+        if(!text)continue;
+        const c=a.color?`rgb(${a.color[0]},${a.color[1]},${a.color[2]})`:'#ffe066';
+        H.push({page:p,top:qs.length?Math.max(...qs.map(q=>q[3])):0,section:sec?sec.title:'',text,
+          size:Math.round(sizes.reduce((s,v)=>s+v,0)/sizes.length)||11,color:c,kind:a.subtype,
+          note:(a.contentsObj&&a.contentsObj.str)||a.contents||'',on:true});
+      }
+      if(H.length===before&&items.length){status('Scanning page '+p+' for colored highlights…');await scan(page,items,p,sec)}
+    }
+    H.sort((a,b)=>a.page-b.page||b.top-a.top);
+    if(!H.length){status('No highlights found. Pages: '+pdf.numPages+'. Annotations in file: '+(Object.keys(stats).length?JSON.stringify(stats):'none')+'. If the PDF is a scan (just images), the text can’t be read without OCR.');return}
+    $('title').value=$('title').value||('Highlights: '+fname);
+    status('');$('work').classList.remove('hide');render();
+  }catch(e){status('Couldn’t read that file: '+(e.message||e))}
+}
+function render(){
+  let h='',last=null;const grp=$('grp').checked;
+  H.forEach((x,i)=>{
+    if(grp&&x.section!==last){last=x.section;h+=`<div class="sec">${esc(x.section||'Highlights')}</div>`}
+    h+=`<div class="hl" style="border-left-color:${esc(x.color)}"><div class="m"><span>p. ${x.page} · ${x.kind.toLowerCase()}</span><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-i="${i}" ${x.on?'checked':''}> include</label></div><p>${esc(x.text)}</p><textarea data-n="${i}" placeholder="Add a note…">${esc(x.note)}</textarea></div>`;
+  });
+  $('list').innerHTML=h;
+  $('count').textContent=H.filter(x=>x.on).length+' of '+H.length+' included';
+}
+$('list').addEventListener('change',e=>{const i=e.target.dataset.i;if(i!=null){H[i].on=e.target.checked;$('count').textContent=H.filter(x=>x.on).length+' of '+H.length+' included'}});
+$('list').addEventListener('input',e=>{const i=e.target.dataset.n;if(i!=null)H[i].note=e.target.value});
+$('grp').onchange=render;
+$('all').onclick=()=>{const v=!H.every(x=>x.on);H.forEach(x=>x.on=v);render()};
+
+const clean=s=>String(s).replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').replace(/[\u2013\u2014]/g,'-').replace(/\u2026/g,'...').replace(/\u00a0/g,' ').replace(/[^\x09\x0a\x20-\x7e\xa1-\xff]/g,'');
+function build(){
+  const {jsPDF}=window.jspdf,font=$('font').value,m=+$('margin').value||56,base=+$('size').value||11;
+  const doc=new jsPDF({unit:'pt',format:$('page').value});
+  const W=doc.internal.pageSize.getWidth(),Hh=doc.internal.pageSize.getHeight(),mw=W-2*m-12;
+  const items=H.filter(x=>x.on);let y=m,first=1;
+  if($('tp').checked){
+    doc.setFont(font,'bold');doc.setFontSize(26);
+    const t=doc.splitTextToSize(clean($('title').value||'Highlights'),W-2*m);
+    doc.text(t,W/2,Hh/3,{align:'center'});
+    doc.setFont(font,'normal');doc.setFontSize(11);doc.setTextColor(110);
+    doc.text(`${items.length} highlights from ${clean(fname)}`,W/2,Hh/3+t.length*30+8,{align:'center'});
+    doc.setTextColor(0);doc.addPage();first=2;
+  }
+  let sec=null;
+  for(const x of items){
+    const sz=$('orig').checked?Math.min(20,Math.max(9,x.size)):base,lh=sz*1.4;
+    doc.setFont(font,'normal');doc.setFontSize(sz);
+    const lines=doc.splitTextToSize(clean(x.text),mw);
+    const note=x.note.trim()?doc.splitTextToSize('Note: '+clean(x.note.trim()),mw):[];
+    const need=lines.length*lh+note.length*lh*.95+lh+10;
+    if($('grp').checked&&x.section!==sec){
+      sec=x.section;if(y+40>Hh-m){doc.addPage();y=m}
+      if(sec){doc.setFont(font,'bold');doc.setFontSize(base+3);doc.text(clean(sec),m,y+base);y+=base+14}
+    }
+    if(y+need>Hh-m){doc.addPage();y=m}
+    const m2=x.color.match(/\d+/g)||[255,224,102];
+    doc.setFont(font,'normal');doc.setFontSize(8);doc.setTextColor(120);
+    doc.text('p. '+x.page,m+12,y+6);y+=lh*.8;
+    doc.setFillColor(+m2[0],+m2[1],+m2[2]);
+    doc.rect(m,y-sz*.9,4,lines.length*lh+note.length*lh*.95,'F');
+    doc.setFontSize(sz);doc.setTextColor(0);doc.text(lines,m+12,y,{lineHeightFactor:1.4});y+=lines.length*lh;
+    if(note.length){doc.setFont(font,'italic');doc.setFontSize(sz-1);doc.setTextColor(90);doc.text(note,m+12,y,{lineHeightFactor:1.35});y+=note.length*lh*.95;doc.setTextColor(0)}
+    y+=12;
+  }
+  if($('pn').checked){
+    const n=doc.getNumberOfPages();
+    for(let p=first;p<=n;p++){doc.setPage(p);doc.setFontSize(9);doc.setFont(font,'normal');doc.setTextColor(130);doc.text(String(p-first+1),W/2,Hh-m/2,{align:'center'})}
+  }
+  return doc;
+}
+$('dl').onclick=()=>{
+  if(!H.some(x=>x.on)){status('Select at least one highlight.');return}
+  try{
+    build().save((fname.replace(/[^\w\- ]/g,'')||'highlights')+'-highlights.pdf');
+    status('');
+  }catch(e){status('Couldn\u2019t create the PDF: '+((e&&e.message)||e))}
+};
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
